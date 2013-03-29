@@ -1,0 +1,41 @@
+{
+  "name": "observe-shim",
+  "description": "An Object.observe harmony proposal shim",
+  "version": "0.1.0",
+  "keywords": [
+    "observe",
+    "observe-utils",
+    "data binding"
+  ],
+  "author": {
+    "name": "Kap IT",
+    "email": "contact@kapit.fr",
+    "url": "http://www.kapit.fr/"
+  },
+  "contributors": [
+    {
+      "name": "François de Campredon",
+      "email": "fdecampredon@kapit.fr",
+      "url": "http://francois.de-campredon.fr/"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kapit/observe-utils.git"
+  },
+  "main": "lib/observe-shim.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "matchdep": "~0.1.1",
+    "grunt": "~0.4.0",
+    "grunt-contrib-jshint": "~0.1.1",
+    "grunt-mocha": "~0.2.3"
+  },
+  "licenses": {
+    "type": "Apache-2.0",
+    "url": "http://www.apache.org/licenses/LICENSE-2.0"
+  }
+}

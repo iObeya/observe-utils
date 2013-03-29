@@ -1,0 +1,137 @@
+ObserveUtils
+============
+
+See : [The Object.observe shim](https://github.com/KapIT/observe-shim).
+
+Goal:
+----
+provide a utilities to facilitate the use of the [observe-shim](https://github.com/KapIT/observe-shim).
+
+
+ObserveUtils.defineObservableProperties :
+----------------------------
+
+### Description :
+Define observable properties on the given object an return it.
+
+### Usage : 
+
+    var myObject = {};
+    ObserveUtils.defineObservableProperties(myObject, "foo", "bar");
+    Object.observe(myObject, function (changes) {
+        console.log(changes);
+    });
+    myObject.foo = "Hello";
+    myObject.bar = "World";
+
+    //log
+
+    [
+        {
+            name : "foo",
+            object : myObject,
+            oldValue : undefined,
+            type : "updated"
+        },
+        {
+            name : "bar",
+            object : myObject,
+            oldValue : undefined,
+            type : "updated"
+        }
+    ]
+
+ObserveUtils.List :
+
+### Description :
+Provide a List class, similar to Array, that notify 'changesRecord' when modified
+
+### Usage : 
+
+    var List = ObserveUtils.List;
+    var myList = List(1,2,3);
+    Object.observe(myList, function (changes) {
+        console.log(changes);
+    });
+    list.push(4);
+
+    //log
+
+    [
+        {
+            name : 3,
+            object : myList,
+            type : "new"
+        },
+        {
+            name : "length",
+            object : myList,
+            oldValue : 3,
+            type : "updated"
+        }
+    ]
+
+### Limitations :
+
+While the list allow you to retrieve value associated to a given index with the brackets notation, like with array, setting values in the same way will be silent, and the length won't be modified if the index is out of bounds, the delete operator won't be caught neither.
+
+### Difference with Array :
+
+To set a value at a given index use the <code>set</code> method of the List :  
+
+    var List = ObserveUtils.List;
+    var myList = List(1,2,3);
+    list.set(3,4);
+    list.set(3,5);
+    
+    //log
+
+    [
+        {
+            name : 3,
+            object : myList,
+            type : "new"
+        },
+        {
+            name : "length",
+            object : myList,
+            oldValue : 3,
+            type : "updated"
+        }
+    ]
+    [
+        {
+            name : 3,
+            object : myList,
+            oldValue : 4,
+            type : "updated"
+        }
+    ]
+
+to delete a value at a given index use the <code>delete</code>  method of the List :
+
+    var List = ObserveUtils.List;
+    var myList = List(1,2,3);
+    list.delete(2);
+
+    //log
+   
+    [
+        {
+            name : 2,
+            object : myList,
+            oldValue : 3,
+            type : "deleted"
+        }
+    ]
+    
+The list also provide a <code>toArray</code> method that return a clone array of the List, and a static method <code>fromArray</code> that create a List from a given array.
+List methods corresponding to an Array methods that returns an array, return a List.
+
+Build And Test:
+---------------
+
+Require [bower](https://github.com/twitter/bower) and [grunt-cli](https://github.com/gruntjs/grunt-cli) installed on your machine.
+
+    npm install & bower install
+    grunt // test 

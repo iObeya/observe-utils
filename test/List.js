@@ -1,0 +1,1120 @@
+//    Copyright 2012 Kap IT (http://www.kapit.fr/)
+//
+//    Licensed under the Apache License, Version 2.0 (the 'License');
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an 'AS IS' BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//    Author : François de Campredon (http://francois.de-campredon.fr/),
+
+/*global ObserveUtils, describe, it, expect , beforeEach, sinon */
+
+
+describe('List', function () {
+    'use strict';
+    var List = ObserveUtils.List;
+
+    describe('Array behaviours', function () {
+        function isValidNumberTest(testFunction) {
+            expect(function () {
+                testFunction('foo');
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+
+            expect(function () {
+                testFunction({});
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+
+            expect(function () {
+                testFunction(undefined);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+
+            expect(function () {
+                testFunction(NaN);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+
+            expect(function () {
+                testFunction(Infinity);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+
+            expect(function () {
+                testFunction(-1);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+            expect(function () {
+                testFunction(0.1);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(RangeError);
+                });
+
+
+            expect(function () {
+                testFunction(1);
+            }).to.not.throwException();
+
+            expect(function () {
+                testFunction('1');
+            }).to.not.throwException();
+
+            expect(function () {
+                testFunction(null);
+            }).to.not.throwException();
+
+            expect(function () {
+                testFunction(false);
+            }).to.not.throwException();
+        }
+
+        function isCallableTest(testFunction) {
+            expect(function () {
+                testFunction();
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(TypeError);
+                });
+
+            expect(function () {
+                testFunction({});
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(TypeError);
+                });
+
+            expect(function () {
+                testFunction(null);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(TypeError);
+                });
+
+            expect(function () {
+                testFunction(0);
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(TypeError);
+                });
+
+            expect(function () {
+                testFunction(' ');
+            }).to.throwException(function (e) {
+                    expect(e).to.be.a(TypeError);
+                });
+        }
+
+        describe('Constructor', function () {
+
+            it('should provide a constructor that take a length as parameter', function () {
+                var length = Math.ceil(Math.random() * 100);
+                var list = new List(length);
+                expect(list.length).to.be(length);
+                expect(Object.keys(list)).to.be.eql([]);
+            });
+
+
+            it('should provide a constructor that take a range of object as arguments and add it to the object', function () {
+                var list = new List(undefined, 'a', 'b', {});
+                expect(list.length).to.be(4);
+                expect(list).to.be.eql([undefined, 'a', 'b', {}]);
+            });
+
+            it('should behave the same with or without the "new" operator', function () {
+                expect(List(1)).to.be.eql(new List(1));
+                expect(List('a', 'b', 'c')).to.be.eql(new List('a', 'b', 'c'));
+            });
+
+        });
+
+
+        describe('length property', function () {
+            var list;
+            beforeEach(function () {
+                list = List('1', '2', '3', '4');
+            });
+
+            it('should only be assignable with positive finite integer', function () {
+
+                isValidNumberTest(function (value) {
+                    list.length = value;
+                });
+
+            });
+
+
+            it('should destroy index when decreased', function () {
+                list.length = 2;
+                expect(list).to.be.eql(['1', '2']);
+            });
+
+        });
+
+        describe('set method', function () {
+            var list;
+            var index;
+            beforeEach(function () {
+                list = List();
+                index = Math.ceil(Math.random() * 100);
+            });
+
+            it('should only accept as index positive finite integer', function () {
+                isValidNumberTest(function (value) {
+                    list.set(value);
+                });
+            });
+
+            it('should set a property at the desired index', function () {
+                list.set(index, 'foo');
+                expect(list[index]).to.be('foo');
+            });
+
+
+            it('should increase the length when setting a property out of bounds', function () {
+                list.set(index, 'foo');
+                expect(list.length).to.be(index + 1);
+            });
+        });
+
+        describe('delete method', function () {
+
+            var list;
+            var index;
+            beforeEach(function () {
+                list = List();
+                index = Math.ceil(Math.random() * 100);
+            });
+
+            it('should only accept as index positive finite integer', function () {
+                isValidNumberTest(function (value) {
+                    list.delete(value);
+                });
+            });
+
+            it('should delete property at the given index', function () {
+                list.set(index, 'hello');
+                list.delete(index);
+                expect(list).to.be.eql([]);
+            });
+        });
+
+
+        describe('toArray method', function () {
+
+            it('should return an array identical to the original list', function () {
+                var list = List('1', {}, 'g', 3, undefined, null);
+                var array = list.toArray();
+                expect(array).to.be.an('array');
+                expect(array).to.be.eql(list);
+            });
+
+        });
+
+        describe('concat method', function () {
+            var list;
+            beforeEach(function () {
+                list = List(1, 2);
+            });
+
+
+            it('should duplicate the original list if no parameter are passed', function () {
+                var newList = list.concat();
+                expect(newList).to.be.a(List);
+                expect(newList).to.be.eql(list);
+                expect(newList).not.to.be(list);
+            });
+
+            it('should return a concatenation of the original list an from an array passed as parameter', function () {
+                var newList = list.concat(['1', '2', '3']);
+                expect(newList).to.be.eql([1, 2, '1', '2', '3']);
+            });
+
+            it('should return a concatenation of the original list an from another list passed as parameter', function () {
+                var newList = list.concat(List('1', '2', '3'));
+                expect(newList).to.be.eql([1, 2, '1', '2', '3']);
+            });
+
+            it('should return a list augmented with every non array non list parameter', function () {
+                var newList = list.concat('string', {}, 5, null, undefined);
+                expect(newList).to.be.eql([1, 2, 'string', {}, 5, null, undefined]);
+            });
+
+            it('should detect array and List parameter anywhere in the arguments list', function () {
+                var newList = list.concat('string', [
+                    {},
+                    5,
+                    null
+                ], Infinity, List(undefined, []));
+                expect(newList).to.be.eql([1, 2, 'string', {}, 5, null, Infinity, undefined, []]);
+            });
+        });
+
+
+        describe('join method', function () {
+            it('should return a string chain composed of the concatation of each element separated by the first parameter passed', function () {
+                expect(List(1, 2, 3).join('#')).to.be('1#2#3');
+            });
+
+            it('should use comma if not separator are given', function () {
+                expect(List(1, 2, 3).join()).to.be('1,2,3');
+            });
+        });
+
+        describe('pop method', function () {
+            it('should do nothing on empty list', function () {
+                var list = List();
+                expect(list.pop()).to.be(undefined);
+                expect(list).to.be.eql([]);
+            });
+
+            it('should remove the last item of the list and return it', function () {
+                var obj = {};
+                var list = List(1, 2, obj);
+                expect(list.pop()).to.be(obj);
+                expect(list).to.be.eql([1, 2]);
+            });
+
+            it('should decrease the length', function () {
+                var list = List(1, 2);
+                list.pop();
+                expect(list.length).to.be(1);
+            });
+        });
+
+
+        describe('push  method', function () {
+            var list;
+            var array;
+            beforeEach(function () {
+                var l = Math.ceil(Math.random() * 100);
+                array = [];
+                for (var i = 0; i < l; i++) {
+                    array.push(Math.random());
+                }
+                list = List.fromArray(array);
+            });
+            it('should do nothing if no parameter are passed', function () {
+                list.push();
+                expect(list).to.be.eql(array);
+                expect(list.length).to.be(array.length);
+            });
+
+            it('should return the length', function () {
+                expect(list.push()).to.be(list.length);
+            });
+
+            it('should add any object passed as parameter', function () {
+                var obj = {};
+                list.push(1, obj);
+                expect(list).to.be.eql(array.concat(1, obj));
+            });
+
+            it('should increase the length', function () {
+                list.push(1, 2);
+                expect(list.length).to.be(array.length + 2);
+            });
+        });
+
+
+        describe('reverse method', function () {
+            it('should reverse the array', function () {
+                var l = Math.ceil(Math.random() * 100);
+                var array = [];
+                for (var i = 0; i < l; i++) {
+                    array.push(Math.random());
+                }
+                var list = List.fromArray(array);
+                list.reverse();
+                expect(list).to.be.eql(array.reverse());
+            });
+
+            it('should return the list', function () {
+                var list = List();
+                expect(list.reverse()).to.be(list);
+            });
+        });
+
+
+        describe('shift method', function () {
+            it('should do nothing on empty list', function () {
+                var list = List();
+                expect(list.shift()).to.be(undefined);
+                expect(list).to.be.eql([]);
+            });
+
+            it('should remove the firdt item of the list and return it', function () {
+                var obj = {};
+                var list = List(obj, 1, 2);
+                expect(list.shift()).to.be(obj);
+                expect(list).to.be.eql([1, 2]);
+            });
+
+            it('should decrease the length', function () {
+                var list = List(1, 2);
+                list.shift();
+                expect(list.length).to.be(1);
+            });
+        });
+
+
+        describe('slice method', function () {
+            var list;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+            });
+
+
+            it('should duplicate the original list if no parameter are passed', function () {
+                var newList = list.slice();
+                expect(newList).to.be.a(List);
+                expect(newList).to.be.eql(list);
+                expect(newList).not.to.be(list);
+            });
+
+
+            it('should extract a list, subset of the original list, starting at the index of the first parameter to the index of the second parameter ', function () {
+                var newList = list.slice(1, 3);
+                expect(newList).to.be.eql([2, 3]);
+            });
+
+            it('should extract a list, subset of the original list, starting at the index of the first parameter to the end of the list, if the second parameter is not defined', function () {
+                var newList = list.slice(1);
+                expect(newList).to.be.eql([2, 3, 4]);
+            });
+
+            it('should extract a list, subset of the original list, starting at the begining of the lst to the index of the first parameter, if the first parameter is not defined', function () {
+                var newList = list.slice(undefined, 3);
+                expect(newList).to.be.eql([1, 2, 3]);
+            });
+
+            it('should not alter the orginial list', function () {
+                list.slice(1, 3);
+                expect(list).to.be.eql([1, 2, 3, 4]);
+            });
+        });
+
+        describe('sort methid', function () {
+            it('should do nothing on empty list', function () {
+                var list = List();
+                list.sort();
+                expect(list).to.be.eql([]);
+            });
+
+
+            it('should return the list', function () {
+                var list = List();
+                expect(list.sort()).to.be(list);
+            });
+
+
+            it('should sort alphabeticly the content if no parameters are given', function () {
+                var list = List('b', 'e', 'a', 'g');
+                expect(list.sort()).to.be.eql(['a', 'b', 'e', 'g']);
+            });
+
+
+            it('should sort the content according to the given sort function if given', function () {
+                var list = List(10, 1, 2, 9, 11, 15);
+                expect(list.sort(function (a, b) {
+                    return a - b;
+                })).to.be.eql([1, 2, 9, 10, 11, 15]);
+            });
+        });
+
+
+        describe('splice method', function () {
+
+            var list;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4, 5);
+            });
+
+            it('should do nothing on empty list', function () {
+                var list = List();
+                list.splice();
+                expect(list).to.be.eql([]);
+            });
+
+            it('should remove x item from the list at the index given as first parameter x being the second parameter', function () {
+                list.splice(1, 2);
+                expect(list).to.be.eql([1, 4, 5]);
+            });
+
+            it('should do nothing if no parameters are given', function () {
+                list.splice();
+                expect(list).to.be.eql([1, 2, 3, 4, 5]);
+            });
+
+            it('should remove all item from the list starting at the index given as first parameter if the second parameter is not defined', function () {
+                list.splice(1);
+                expect(list).to.be.eql([1]);
+            });
+
+            it('should remove x item from the list starting at the index 0 x being the second parameter, if the first parameters is not defined', function () {
+                list.splice(undefined, 2);
+                expect(list).to.be.eql([3, 4, 5]);
+            });
+
+            it('should return the removed item', function () {
+                expect(list.splice(1, 2)).to.be.eql([2, 3]);
+            });
+
+
+            it('should all item passed as rest parameters at the given at the first parameter', function () {
+                var obj = {}, array = [];
+                list.splice(1, 2, 'g', obj, array);
+                expect(list).to.be.eql([1, 'g', obj, array, 4, 5]);
+            });
+
+
+            it('should decrease the length if item are removed', function () {
+                list.splice(1, 2);
+                expect(list.length).to.be(3);
+            });
+
+            it('should increase the length if item are removed', function () {
+                list.splice(1, 2, 1, 2, 3);
+                expect(list.length).to.be(6);
+            });
+        });
+
+
+        describe('unshift method', function () {
+
+            var list;
+            var array;
+            beforeEach(function () {
+                var l = Math.ceil(Math.random() * 100);
+                array = [];
+                for (var i = 0; i < l; i++) {
+                    array.push(Math.random());
+                }
+                list = List.fromArray(array);
+            });
+
+            it('should do nothing if no parameter are passed', function () {
+                list.unshift();
+                expect(list).to.be.eql(array);
+                expect(list.length).to.be(array.length);
+            });
+
+            it('should return the length', function () {
+                expect(list.unshift()).to.be(list.length);
+            });
+
+            it('should add any object passed as parameter at the begining of the list', function () {
+                var obj = {};
+                list.unshift(1, obj);
+                expect(list).to.be.eql([1, obj].concat(array));
+            });
+
+            it('should increase the length', function () {
+                list.unshift(1, 2);
+                expect(list.length).to.be(array.length + 2);
+            });
+
+        });
+
+        describe('reduce method', function () {
+
+            var list, callback;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy(function (a, b) {
+                    return a + b;
+                });
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.reduce.bind(list));
+            });
+
+            it('should call the given callback x time, x being the list.length -1 if no second parameter is set', function () {
+                list.reduce(callback);
+                expect(callback.callCount).to.be(3);
+            });
+
+
+            it('should call the given callback x time, x being the list.length if a second parameter is set', function () {
+                list.reduce(callback, undefined);
+                expect(callback.callCount).to.be(4);
+            });
+
+            it('should call the given callback with arguments (previousValue,currentValue,index,array) ', function () {
+                list.reduce(callback);
+                expect(callback.args).to.be.eql([
+                    [1, 2, 1, list],
+                    [3, 3, 2, list],
+                    [6, 4, 3, list]
+                ]);
+            });
+
+
+            it('should call the given callback with arguments (previousValue,currentValue,index,array) previousValue being initial value if given', function () {
+                list.reduce(callback, 0);
+                expect(callback.args).to.be.eql([
+                    [0, 1, 0, list],
+                    [1, 2, 1, list],
+                    [3, 3, 2, list],
+                    [6, 4, 3, list]
+                ]);
+            });
+
+            it('should return the  returned value of the last invocation of the callback ', function () {
+                expect(list.reduce(callback, 0)).to.be(10);
+                expect(callback.returnValues[callback.returnValues.length - 1]).to.be(10);
+            });
+        });
+
+
+        describe('reduceRight method', function () {
+
+            var list, callback;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy(function (a, b) {
+                    return a - b;
+                });
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.reduceRight.bind(list));
+            });
+
+            it('should call the given callback x time, x being the list.length -1 if no second parameter is set', function () {
+                list.reduceRight(callback);
+                expect(callback.callCount).to.be(3);
+            });
+
+
+            it('should call the given callback x time, x being the list.length if a second parameter is set', function () {
+                list.reduceRight(callback, undefined);
+                expect(callback.callCount).to.be(4);
+            });
+
+            it('should call the given callback with arguments (previousValue,currentValue,index,array) ', function () {
+                list.reduceRight(callback);
+                expect(callback.args).to.be.eql([
+                    [4, 3, 2, list],
+                    [1, 2, 1, list],
+                    [-1, 1, 0, list]
+                ]);
+            });
+
+            it('should call the given callback with arguments (previousValue,currentValue,index,array) previousValue being initial value if given', function () {
+                list.reduceRight(callback, 0);
+                expect(callback.args).to.be.eql([
+                    [0, 4, 3, list],
+                    [-4, 3, 2, list],
+                    [-7, 2, 1, list],
+                    [-9, 1, 0, list]
+                ]);
+            });
+
+            it('should return the  returned value of the last invocation of the callback ', function () {
+                expect(list.reduceRight(callback, 0)).to.be(-10);
+                expect(callback.returnValues[callback.returnValues.length - 1]).to.be(-10);
+            });
+        });
+
+
+        describe('indexOf method', function () {
+            var obj = {},
+                list = List(1, {}, obj, obj, 4);
+
+            it('should return the first index corresponding to the value given as parameter', function () {
+                expect(list.indexOf(obj)).to.be(2);
+            });
+
+
+            it('should return -1 if the value cannot be found in the array', function () {
+                expect(list.indexOf({})).to.be(-1);
+            });
+        });
+
+        describe('lastIndexOf method', function () {
+            var obj = {},
+                list = List(1, {}, obj, obj, 4);
+
+            it('should return the first index corresponding to the value given as parameter', function () {
+                expect(list.lastIndexOf(obj)).to.be(3);
+            });
+
+
+            it('should return -1 if the value cannot be found in the array', function () {
+                expect(list.lastIndexOf({})).to.be(-1);
+            });
+        });
+
+
+        describe('every method', function () {
+            var list, callback, returnValue;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy(function () {
+                    return returnValue;
+                });
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.every.bind(list));
+            });
+
+            it('should call the callback on each element until the callback return false', function () {
+                list.every(function (item) {
+                    returnValue = (item !== 3);
+                    return callback();
+                });
+                expect(callback.callCount).to.be(3);
+            });
+
+
+            it('should return true if every invocations of the callback returned true', function () {
+                returnValue = true;
+                expect(list.every(callback)).to.be(true);
+            });
+
+
+            it('should return false if one invocations of the callback returned true', function () {
+                expect(list.every(function (item) {
+                    return (item !== 3);
+                })).to.be(false);
+            });
+
+
+            it('should call the callback with a "thisValue" equals to the given second parameter', function () {
+                var obj = {};
+                returnValue = true;
+                list.every(callback, obj);
+                expect(callback.alwaysCalledOn(obj)).to.be(true);
+            });
+        });
+
+        describe('filter method', function () {
+            var list, callback;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy();
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.filter.bind(list));
+            });
+
+            it('should return a new instance of  List', function () {
+                var newList = list.filter(function () {
+                    return true;
+                });
+                expect(newList).to.be.a(List);
+                expect(newList).to.not.be(list);
+            });
+
+            it('should call the callback on each element', function () {
+                list.filter(callback);
+                expect(callback.callCount).to.be(4);
+            });
+
+
+            it('should return a list composed of each element for which the callback invocation returned true', function () {
+                expect(list.filter(function (a) {
+                    return a % 2 === 0;
+                })).to.be.eql([2, 4]);
+            });
+
+
+            it('should call the callback with arguments (value,index,list) ', function () {
+                var obj = {};
+                list.filter(callback, obj);
+                expect(callback.args).to.be.eql([
+                    [1, 0, list],
+                    [2, 1, list],
+                    [3, 2, list],
+                    [4, 3, list]
+                ]);
+            });
+
+            it('should call the callback with a "thisValue" equals to the given second parameter', function () {
+                var obj = {};
+                list.filter(callback, obj);
+                expect(callback.alwaysCalledOn(obj)).to.be(true);
+            });
+        });
+
+
+        describe('forEach method', function () {
+            var list, callback;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy();
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.forEach.bind(list));
+            });
+
+
+            it('should call the callback on each element', function () {
+                list.forEach(callback);
+                expect(callback.callCount).to.be(4);
+            });
+
+
+            it('should call the callback with arguments (value,index,list) ', function () {
+                var obj = {};
+                list.forEach(callback, obj);
+                expect(callback.args).to.be.eql([
+                    [1, 0, list],
+                    [2, 1, list],
+                    [3, 2, list],
+                    [4, 3, list]
+                ]);
+            });
+
+            it('should call the callback with a "thisValue" equals to the given second parameter', function () {
+                var obj = {};
+                list.forEach(callback, obj);
+                expect(callback.alwaysCalledOn(obj)).to.be(true);
+            });
+        });
+
+
+        describe('map method', function () {
+            var list, callback;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy(function (item) {
+                    return item + 1;
+                });
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.map.bind(list));
+            });
+
+            it('should return a new instance of List', function () {
+                var newList = list.map(function () {
+                    return true;
+                });
+                expect(newList).to.be.a(List);
+                expect(newList).to.not.be(list);
+            });
+
+            it('should call the callback on each element', function () {
+                list.map(callback);
+                expect(callback.callCount).to.be(4);
+            });
+
+
+            it('should return a list composed of each return invocation of the callback', function () {
+                expect(list.map(callback)).to.be.eql([2, 3, 4, 5]);
+            });
+
+
+            it('should call the callback with arguments (value,index,list) ', function () {
+                var obj = {};
+                list.map(callback, obj);
+                expect(callback.args).to.be.eql([
+                    [1, 0, list],
+                    [2, 1, list],
+                    [3, 2, list],
+                    [4, 3, list]
+                ]);
+            });
+
+            it('should call the callback with a "thisValue" equals to the given second parameter', function () {
+                var obj = {};
+                list.map(callback, obj);
+                expect(callback.alwaysCalledOn(obj)).to.be(true);
+            });
+        });
+
+        describe('some method', function () {
+            var list, callback, returnValue;
+            beforeEach(function () {
+                list = List(1, 2, 3, 4);
+                callback = sinon.spy(function () {
+                    return returnValue;
+                });
+            });
+
+            it('should throw an error if a non function is passed as first parameter', function () {
+                isCallableTest(List.prototype.some.bind(list));
+            });
+
+            it('should call the callback on each element until the callback return true', function () {
+                list.some(function (item) {
+                    returnValue = (item === 3);
+                    return callback();
+                });
+                expect(callback.callCount).to.be(3);
+            });
+
+
+            it('should return true if one invocations of the callback returned true', function () {
+                expect(list.some(function (item) {
+                    return (item === 3);
+                })).to.be(true);
+            });
+
+
+            it('should return false if all invocations of the callback returned false', function () {
+                returnValue = false;
+                expect(list.some(callback)).to.be(false);
+            });
+
+
+            it('should call the callback with a "thisValue" equals to the given second parameter', function () {
+                var obj = {};
+                returnValue = false;
+                list.some(callback, obj);
+                expect(callback.alwaysCalledOn(obj)).to.be(true);
+            });
+        });
+    });
+
+
+    describe('observable behaviours', function () {
+
+        var list, notifySpy;
+
+        beforeEach(function () {
+            list = List(1, 2, 3, 4);
+            var notifier = Object.getNotifier(list);
+            notifySpy = notifier.notify = sinon.spy();
+        });
+
+
+        function getNotifiedChangesRecords() {
+            return notifySpy.args.map(function (arr) {
+                return arr[0];
+            });
+        }
+
+        describe('length modification', function () {
+
+            it('should notify only length modification when length is increased', function () {
+                list.length = 5;
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+
+            it('should notify deleted property when length is decreased', function () {
+                list.length = 2;
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'deleted', name: '2', oldValue: 3},
+                    {type: 'deleted', name: '3', oldValue: 4},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+        });
+
+        describe('set method', function () {
+            it('should notify an change record of type "updated" when the given index is already defined on the list', function () {
+                list.set(3, 5);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '3', oldValue: 4}
+                ]);
+            });
+
+
+            it('should notify a change record of type "new" when the given index is not in the list bound, and a length update record', function () {
+                list.set(4, 5);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'new', name: '4'},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+        });
+
+        describe('delete method', function () {
+
+            it('should not notify anything if the index given is out of bounds', function () {
+                list.delete(5);
+                expect(notifySpy.called).to.be(false);
+            });
+
+
+            it('should notify a delete record if the index is in bounds', function () {
+                list.delete(1);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'deleted', name: '1', oldValue: 2 }
+                ]);
+            });
+        });
+
+        describe('pop method', function () {
+            it('should notify a delete change record for the last index of the list, and a length update record', function () {
+                list.pop();
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'deleted', name: '3', oldValue: 4},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+        });
+
+
+        describe('push method', function () {
+
+            it('should not notify anything if no parameters are given', function () {
+                list.push();
+                expect(notifySpy.called).to.be(false);
+            });
+
+            it('should notify a new change record for all added item, and a length update record', function () {
+                list.push(5, 6);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'new', name: '4'},
+                    {type: 'new', name: '5'},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+        });
+
+        describe('reverse method', function () {
+
+            it('should notify an update record for all modified index', function () {
+                list.reverse();
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '0', oldValue: 1},
+                    {type: 'updated', name: '1', oldValue: 2},
+                    {type: 'updated', name: '2', oldValue: 3},
+                    {type: 'updated', name: '3', oldValue: 4}
+                ]);
+            });
+
+            it('should not notify anything for index that have not been modified', function () {
+                list.push(5);
+                notifySpy.reset();
+                list.reverse();
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '0', oldValue: 1},
+                    {type: 'updated', name: '1', oldValue: 2},
+                    {type: 'updated', name: '3', oldValue: 4},
+                    {type: 'updated', name: '4', oldValue: 5}
+                ]);
+            });
+        });
+
+
+        describe('shift method', function () {
+
+            it('should notify  an update record for all index except the last one, a delete change record for the last index, and a length update record', function () {
+                list.shift();
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '0', oldValue: 1},
+                    {type: 'updated', name: '1', oldValue: 2},
+                    {type: 'updated', name: '2', oldValue: 3},
+                    {type: 'deleted', name: '3', oldValue: 4},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+        });
+
+
+        describe('sort method', function () {
+
+            it('should notify an update record for all modified index', function () {
+                list.sort(function (a, b) {
+                    return b - a;
+                });
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '0', oldValue: 1},
+                    {type: 'updated', name: '1', oldValue: 2},
+                    {type: 'updated', name: '2', oldValue: 3},
+                    {type: 'updated', name: '3', oldValue: 4}
+                ]);
+            });
+
+            it('should not notify anything for index that have not been modified', function () {
+                list.sort();
+                expect(notifySpy.called).to.be(false);
+            });
+        });
+
+
+        describe('splice method', function () {
+            it('should not notify anything if no parameters are given', function () {
+                list.splice();
+                expect(notifySpy.called).to.be(false);
+            });
+
+            it('should notify "update" records, "delete" records and length "update" records if the operation decrease the list size', function () {
+                list.splice(1, 2);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '1', oldValue: 2},
+                    {type: 'deleted', name: '2', oldValue: 3},
+                    {type: 'deleted', name: '3', oldValue: 4},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+
+            it('should notify "update" records, "add" records and length "update" records if the operation decrease the list size', function () {
+                list.splice(2, 0, 4, 5);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '2', oldValue: 3},
+                    {type: 'updated', name: '3', oldValue: 4},
+                    {type: 'new', name: '4'},
+                    {type: 'new', name: '5'},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+
+            it('should notify "update" records only if the operation does not change the list size', function () {
+                list.splice(2, 1, 4);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '2', oldValue: 3}
+                ]);
+            });
+
+
+            it('should not notify anything if the operation does not modify the list', function () {
+                list.splice(2, 1, 3);
+                expect(notifySpy.called).to.be(false);
+            });
+
+
+        });
+
+
+        describe('unshift method', function () {
+            it('should not notify anything if no parameters are given', function () {
+                list.unshift();
+                expect(notifySpy.called).to.be(false);
+            });
+
+            it('should notify and update record for all index, a new change record for all added index, and a length update record', function () {
+                list.unshift(5, 6);
+                expect(getNotifiedChangesRecords()).to.be.eql([
+                    {type: 'updated', name: '0', oldValue: 1},
+                    {type: 'updated', name: '1', oldValue: 2},
+                    {type: 'updated', name: '2', oldValue: 3},
+                    {type: 'updated', name: '3', oldValue: 4},
+                    {type: 'new', name: '4'},
+                    {type: 'new', name: '5'},
+                    {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+        });
+    });
+
+});
