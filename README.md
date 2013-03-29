@@ -54,7 +54,7 @@ Provide a List class, similar to Array, that notify 'changesRecord' when modifie
     Object.observe(myList, function (changes) {
         console.log(changes);
     });
-    list.push(4);
+    myList.push(4);
 
     //log
 
@@ -82,8 +82,11 @@ To set a value at a given index use the <code>set</code> method of the List :
 
     var List = ObserveUtils.List;
     var myList = List(1,2,3);
-    list.set(3,4);
-    list.set(3,5);
+    Object.observe(myList, function (changes) {
+        console.log(changes);
+    });
+    myList.set(3,4);
+    myList.set(3,5);
     
     //log
 
@@ -98,9 +101,7 @@ To set a value at a given index use the <code>set</code> method of the List :
             object : myList,
             oldValue : 3,
             type : "updated"
-        }
-    ]
-    [
+        },
         {
             name : 3,
             object : myList,
@@ -113,7 +114,10 @@ to delete a value at a given index use the <code>delete</code>  method of the Li
 
     var List = ObserveUtils.List;
     var myList = List(1,2,3);
-    list.delete(2);
+    Object.observe(myList, function (changes) {
+        console.log(changes);
+    });
+    myList.delete(2);
 
     //log
    
