@@ -9,7 +9,7 @@ provide a utilities to facilitate the use of the [observe-shim](https://github.c
 
 
 ObserveUtils.defineObservableProperties :
-----------------------------
+-----------------------------------------
 
 ### Description :
 Define observable properties on the given object an return it.
@@ -42,6 +42,7 @@ Define observable properties on the given object an return it.
     ]
 
 ObserveUtils.List :
+-------------------
 
 ### Description :
 Provide a List class, similar to Array, that notify 'changesRecord' when modified
