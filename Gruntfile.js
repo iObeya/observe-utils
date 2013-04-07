@@ -29,19 +29,11 @@ module.exports = function (grunt) {
             options: {
                 run : true
             }
-        },
-        jsdoc : {
-            lib : {
-                src: ['lib/observe-utils.js'],
-                options: {
-                    destination: 'docs'
-                }
-            }
         }
     });
 
     grunt.registerTask('test', ['jshint', 'mocha']);
-    grunt.registerTask('default', ['test', 'jsdoc']);
+    grunt.registerTask('default', ['test']);
 
 
 };
