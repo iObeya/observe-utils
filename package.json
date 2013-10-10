@@ -1,7 +1,7 @@
 {
-  "name": "observe-shim",
-  "description": "An Object.observe harmony proposal shim",
-  "version": "0.1.0",
+  "name": "observe-utils",
+  "description": "A set of utilities for the observe-shim",
+  "version": "0.2.0",
   "keywords": [
     "observe",
     "observe-utils",
