@@ -29,10 +29,18 @@ module.exports = function (grunt) {
             options: {
                 run : true
             }
+        },
+        mochaTest : {
+            test: {
+                options: {
+                    reporter: 'spec'
+                },
+                src: ['test/node-index.js']
+            }
         }
     });
 
-    grunt.registerTask('test', ['jshint', 'mocha']);
+    grunt.registerTask('test', ['jshint', 'mocha', 'mochaTest']);
     grunt.registerTask('default', ['test']);
 
 
