@@ -51,24 +51,20 @@ Provide a List class, similar to Array, that notify 'changesRecord' when modifie
 
     var List = ObserveUtils.List;
     var myList = List(1,2,3);
-    Object.observe(myList, function (changes) {
+    List.observe(myList, function (changes) {
         console.log(changes);
     });
-    myList.push(4);
+    myList.push(4,5);
 
     //log
 
     [
         {
-            name : 3,
-            object : myList,
-            type : "new"
-        },
-        {
-            name : "length",
-            object : myList,
-            oldValue : 3,
-            type : "updated"
+            type : "splice",
+            object: myList,
+            index: 3,
+            removed: [],
+            addedCount: 2
         }
     ]
 
@@ -92,21 +88,18 @@ To set a value at a given index use the <code>set</code> method of the List :
 
     [
         {
-            name : 3,
-            object : myList,
-            type : "new"
+            type : "splice",
+            object: myList,
+            index: 3,
+            removed: [],
+            addedCount: 1
         },
         {
-            name : "length",
-            object : myList,
-            oldValue : 3,
-            type : "updated"
-        },
-        {
-            name : 3,
-            object : myList,
-            oldValue : 4,
-            type : "updated"
+            type : "splice",
+            object: myList,
+            index: 3,
+            removed: [4],
+            addedCount: 1
         }
     ]
 
@@ -114,7 +107,7 @@ to delete a value at a given index use the <code>delete</code>  method of the Li
 
     var List = ObserveUtils.List;
     var myList = List(1,2,3);
-    Object.observe(myList, function (changes) {
+    List.observe(myList, function (changes) {
         console.log(changes);
     });
     myList.delete(2);
