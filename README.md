@@ -78,7 +78,7 @@ To set a value at a given index use the <code>set</code> method of the List :
 
     var List = ObserveUtils.List;
     var myList = List(1,2,3);
-    Object.observe(myList, function (changes) {
+    List.observe(myList, function (changes) {
         console.log(changes);
     });
     myList.set(3,4);
