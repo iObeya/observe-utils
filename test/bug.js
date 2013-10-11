@@ -35,7 +35,7 @@ describe('observer-utils bugs', function () {
     }
 
     function getNotifiedChangesRecordsWithoutSplice() {
-        return getNotifiedChangesRecords().filter( function(record) {
+        return getNotifiedChangesRecords().filter(function (record) {
             return record.type !== 'splice';
         });
     }

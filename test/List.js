@@ -922,13 +922,13 @@ describe('List', function () {
         }
 
         function getNotifiedChangesRecordsWithoutSplice() {
-            return getNotifiedChangesRecords().filter( function(record) {
+            return getNotifiedChangesRecords().filter(function (record) {
                 return record.type !== 'splice';
             });
         }
 
         function getNotifiedSpliceChangesRecords() {
-            return getNotifiedChangesRecords().filter( function(record) {
+            return getNotifiedChangesRecords().filter(function (record) {
                 return record.type === 'splice';
             });
         }
