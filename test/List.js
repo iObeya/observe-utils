@@ -91,32 +91,32 @@ describe('List', function () {
             expect(function () {
                 testFunction();
             }).to.throwException(function (e) {
-                    expect(e).to.be.a(TypeError);
-                });
+                expect(e).to.be.a(TypeError);
+            });
 
             expect(function () {
                 testFunction({});
             }).to.throwException(function (e) {
-                    expect(e).to.be.a(TypeError);
-                });
+                expect(e).to.be.a(TypeError);
+            });
 
             expect(function () {
                 testFunction(null);
             }).to.throwException(function (e) {
-                    expect(e).to.be.a(TypeError);
-                });
+                expect(e).to.be.a(TypeError);
+            });
 
             expect(function () {
                 testFunction(0);
             }).to.throwException(function (e) {
-                    expect(e).to.be.a(TypeError);
-                });
+                expect(e).to.be.a(TypeError);
+            });
 
             expect(function () {
                 testFunction(' ');
             }).to.throwException(function (e) {
-                    expect(e).to.be.a(TypeError);
-                });
+                expect(e).to.be.a(TypeError);
+            });
         }
 
         describe('Constructor', function () {
@@ -140,6 +140,22 @@ describe('List', function () {
                 expect(List('a', 'b', 'c')).to.be.eql(new List('a', 'b', 'c'));
             });
 
+        });
+
+
+        describe('toString', function () {
+            var list;
+            beforeEach(function () {
+                list = List('1', '2', '3', '4');
+            });
+
+            it('toString result should be the same for similar array', function () {
+                expect(list.toString()).to.be(['1', '2', '3', '4'].toString());
+            });
+
+            it('toJSON result should be the same than a the corresponding array JSON', function () {
+                expect(list.toJSON()).to.be(JSON.stringify(['1', '2', '3', '4']));
+            });
         });
 
 
@@ -905,11 +921,23 @@ describe('List', function () {
             });
         }
 
+        function getNotifiedChangesRecordsWithoutSplice() {
+            return getNotifiedChangesRecords().filter( function(record) {
+                return record.type !== 'splice';
+            });
+        }
+
+        function getNotifiedSpliceChangesRecords() {
+            return getNotifiedChangesRecords().filter( function(record) {
+                return record.type === 'splice';
+            });
+        }
+
         describe('length modification', function () {
 
             it('should notify only length modification when length is increased', function () {
                 list.length = 5;
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: 'length', oldValue: 4}
                 ]);
             });
@@ -917,10 +945,24 @@ describe('List', function () {
 
             it('should notify deleted property when length is decreased', function () {
                 list.length = 2;
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'deleted', name: '2', oldValue: 3},
                     {type: 'deleted', name: '3', oldValue: 4},
                     {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+            it('should notify a splice change recordwhen length is decread, describing removed items', function () {
+                list.length = 2;
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 2, addedCount: 0, removed: [3, 4]}
+                ]);
+            });
+
+            it('should notify a splice change recordwhen length is increased, describing the added items', function () {
+                list.length = 5;
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 4, addedCount: 1, removed: []}
                 ]);
             });
 
@@ -929,7 +971,7 @@ describe('List', function () {
         describe('set method', function () {
             it('should notify an change record of type "updated" when the given index is already defined on the list', function () {
                 list.set(3, 5);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '3', oldValue: 4}
                 ]);
             });
@@ -937,9 +979,17 @@ describe('List', function () {
 
             it('should notify a change record of type "new" when the given index is not in the list bound, and a length update record', function () {
                 list.set(4, 5);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'new', name: '4'},
                     {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+
+            it('should notify a splice change recordwhen the given index is not in the list bound', function () {
+                list.set(4, 5);
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 4, addedCount: 1, removed: []}
                 ]);
             });
         });
@@ -954,7 +1004,7 @@ describe('List', function () {
 
             it('should notify a delete record if the index is in bounds', function () {
                 list.delete(1);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'deleted', name: '1', oldValue: 2 }
                 ]);
             });
@@ -963,9 +1013,16 @@ describe('List', function () {
         describe('pop method', function () {
             it('should notify a delete change record for the last index of the list, and a length update record', function () {
                 list.pop();
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'deleted', name: '3', oldValue: 4},
                     {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+            it('should notify a splice change record', function () {
+                list.pop();
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 3, addedCount: 0, removed: [4]}
                 ]);
             });
         });
@@ -980,10 +1037,17 @@ describe('List', function () {
 
             it('should notify a new change record for all added item, and a length update record', function () {
                 list.push(5, 6);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'new', name: '4'},
                     {type: 'new', name: '5'},
                     {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+            it('should notify a splice change record', function () {
+                list.push(5, 6);
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 4, addedCount: 2, removed: []}
                 ]);
             });
         });
@@ -992,7 +1056,7 @@ describe('List', function () {
 
             it('should notify an update record for all modified index', function () {
                 list.reverse();
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '0', oldValue: 1},
                     {type: 'updated', name: '1', oldValue: 2},
                     {type: 'updated', name: '2', oldValue: 3},
@@ -1004,11 +1068,19 @@ describe('List', function () {
                 list.push(5);
                 notifySpy.reset();
                 list.reverse();
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '0', oldValue: 1},
                     {type: 'updated', name: '1', oldValue: 2},
                     {type: 'updated', name: '3', oldValue: 4},
                     {type: 'updated', name: '4', oldValue: 5}
+                ]);
+            });
+
+            it('should notify a splice change record describing a complete reset of the list', function () {
+                var copy = list.toArray();
+                list.reverse();
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 0, addedCount: list.length, removed: copy}
                 ]);
             });
         });
@@ -1018,12 +1090,19 @@ describe('List', function () {
 
             it('should notify  an update record for all index except the last one, a delete change record for the last index, and a length update record', function () {
                 list.shift();
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '0', oldValue: 1},
                     {type: 'updated', name: '1', oldValue: 2},
                     {type: 'updated', name: '2', oldValue: 3},
                     {type: 'deleted', name: '3', oldValue: 4},
                     {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+            it('should notify a splice change record describing the removal of the first element', function () {
+                list.shift();
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 0, addedCount: 0, removed: [1]}
                 ]);
             });
         });
@@ -1035,7 +1114,7 @@ describe('List', function () {
                 list.sort(function (a, b) {
                     return b - a;
                 });
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '0', oldValue: 1},
                     {type: 'updated', name: '1', oldValue: 2},
                     {type: 'updated', name: '2', oldValue: 3},
@@ -1045,7 +1124,18 @@ describe('List', function () {
 
             it('should not notify anything for index that have not been modified', function () {
                 list.sort();
-                expect(notifySpy.called).to.be(false);
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([]);
+            });
+
+
+            it('should notify a splice change record describing a complete reset of the list', function () {
+                var copy = list.toArray();
+                list.sort(function (a, b) {
+                    return b - a;
+                });
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 0, addedCount: list.length, removed: copy}
+                ]);
             });
         });
 
@@ -1058,7 +1148,7 @@ describe('List', function () {
 
             it('should notify "update" records, "delete" records and length "update" records if the operation decrease the list size', function () {
                 list.splice(1, 2);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '1', oldValue: 2},
                     {type: 'deleted', name: '2', oldValue: 3},
                     {type: 'deleted', name: '3', oldValue: 4},
@@ -1069,7 +1159,7 @@ describe('List', function () {
 
             it('should notify "update" records, "add" records and length "update" records if the operation decrease the list size', function () {
                 list.splice(2, 0, 4, 5);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '2', oldValue: 3},
                     {type: 'updated', name: '3', oldValue: 4},
                     {type: 'new', name: '4'},
@@ -1081,7 +1171,7 @@ describe('List', function () {
 
             it('should notify "update" records only if the operation does not change the list size', function () {
                 list.splice(2, 1, 4);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '2', oldValue: 3}
                 ]);
             });
@@ -1089,7 +1179,15 @@ describe('List', function () {
 
             it('should not notify anything if the operation does not modify the list', function () {
                 list.splice(2, 1, 3);
-                expect(notifySpy.called).to.be(false);
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([]);
+            });
+
+
+            it('should notify a splice change record corresponding to the arguments given', function () {
+                list.splice(2, 1, 4, 5);
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 2, addedCount: 2, removed: [3]}
+                ]);
             });
 
 
@@ -1104,7 +1202,7 @@ describe('List', function () {
 
             it('should notify and update record for all index, a new change record for all added index, and a length update record', function () {
                 list.unshift(5, 6);
-                expect(getNotifiedChangesRecords()).to.be.eql([
+                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
                     {type: 'updated', name: '0', oldValue: 1},
                     {type: 'updated', name: '1', oldValue: 2},
                     {type: 'updated', name: '2', oldValue: 3},
@@ -1112,6 +1210,14 @@ describe('List', function () {
                     {type: 'new', name: '4'},
                     {type: 'new', name: '5'},
                     {type: 'updated', name: 'length', oldValue: 4}
+                ]);
+            });
+
+
+            it('should notify a splice change record corresponding to the element added', function () {
+                list.unshift(4, 5);
+                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
+                    {type: 'splice', index: 0, addedCount: 2, removed: []}
                 ]);
             });
         });
