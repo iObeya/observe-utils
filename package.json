@@ -23,7 +23,7 @@
     "type": "git",
     "url": "https://github.com/kapit/observe-utils.git"
   },
-  "main": "lib/observe-shim.js",
+  "main": "lib/observe-utils.js",
   "scripts": {
     "test": "grunt test"
   },
