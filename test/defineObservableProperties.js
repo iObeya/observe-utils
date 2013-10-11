@@ -13,44 +13,52 @@ describe('defineObservableProperties', function () {
         return pd;
     }
 
+    function testIsObject(testFunc) {
+        expect(function () {
+            testFunc(5);
+        }).to.throwException(function (e) {
+                expect(e).to.be.a(TypeError);
+            });
+
+        expect(function () {
+            testFunc('string');
+        }).to.throwException(function (e) {
+            expect(e).to.be.a(TypeError);
+        });
+
+        expect(function () {
+            testFunc(NaN);
+        }).to.throwException(function (e) {
+            expect(e).to.be.a(TypeError);
+        });
+
+        expect(function () {
+            testFunc(null);
+        }).to.throwException(function (e) {
+            expect(e).to.be.a(TypeError);
+        });
+
+        expect(function () {
+            testFunc(undefined);
+        }).to.throwException(function (e) {
+            expect(e).to.be.a(TypeError);
+        });
+
+        expect(function () {
+            testFunc({});
+        }).to.not.throwException();
+
+        expect(function () {
+            testFunc(function () {});
+        }).to.not.throwException();
+    }
+
+
 
     it('should throw an error when passing an non object at first parameter', function () {
-        expect(function () {
-            ObserveUtils.defineObservableProperties(5);
-        }).to.throwException(function (e) {
-                expect(e).to.be.a(TypeError);
-            });
-
-        expect(function () {
-            ObserveUtils.defineObservableProperties('g');
-        }).to.throwException(function (e) {
-                expect(e).to.be.a(TypeError);
-            });
-
-        expect(function () {
-            ObserveUtils.defineObservableProperties(function () {
-            });
-        }).to.throwException(function (e) {
-                expect(e).to.be.a(TypeError);
-            });
-
-        expect(function () {
-            ObserveUtils.defineObservableProperties(NaN);
-        }).to.throwException(function (e) {
-                expect(e).to.be.a(TypeError);
-            });
-
-        expect(function () {
-            ObserveUtils.defineObservableProperties(null);
-        }).to.throwException(function (e) {
-                expect(e).to.be.a(TypeError);
-            });
-
-        expect(function () {
-            ObserveUtils.defineObservableProperties(undefined);
-        }).to.throwException(function (e) {
-                expect(e).to.be.a(TypeError);
-            });
+        testIsObject(function (target) {
+            ObserveUtils.defineObservableProperties(target);
+        });
     });
 
     it('should define getter/setter on object', function () {
