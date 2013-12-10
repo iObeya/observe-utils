@@ -1,7 +1,7 @@
 {
   "name": "observe-utils",
   "description": "A set of utilities for the observe-shim",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "keywords": [
     "observe",
     "observe-utils",
@@ -33,7 +33,7 @@
     "grunt": "~0.4.0",
     "grunt-contrib-jshint": "~0.1.1",
     "grunt-mocha": "~0.2.3",
-    "observe-shim": "~0.3.0",
+    "observe-shim": "~0.4.0",
     "sinon": "~1.7.3",
     "expect.js": "~0.2.0",
     "grunt-mocha-test": "~0.7.0"
