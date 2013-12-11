@@ -13,7 +13,7 @@
 //    limitations under the License.
 //    Author : François de Campredon (http://francois.de-campredon.fr/),
 
-/*global ObserveUtils, describe, it, expect , beforeEach, sinon */
+/*global ObserveUtils, describe, it, expect , beforeEach, afterEach, sinon */
 
 
 describe('List', function () {
@@ -424,7 +424,7 @@ describe('List', function () {
             });
         });
 
-        describe('sort methid', function () {
+        describe('sort method', function () {
             it('should do nothing on empty list', function () {
                 var list = List();
                 list.sort();
@@ -906,319 +906,352 @@ describe('List', function () {
 
     describe('observable behaviours', function () {
 
-        var list, notifySpy;
+
+        var list, objectObserverChanges, arrayObserverChanges,
+            observerCallbackCallCount, expectedCallBackCount, observerCallback;
+
+        function notifyObservation() {
+            observerCallbackCallCount++;
+            if (observerCallback && observerCallbackCallCount === expectedCallBackCount) {
+                observerCallback(objectObserverChanges, arrayObserverChanges);
+            }
+        }
+
+        function objectObserver(changes) {
+            objectObserverChanges.push(changes);
+            notifyObservation();
+        }
+
+        function arrayObserver(changes) {
+            arrayObserverChanges.push(changes);
+            notifyObservation();
+        }
+
+        function getObservationResult(expectedCallBackCountParam, callback, doneCallback) {
+            var observationDoneCallBack = function ()  {
+                try {
+                    callback.apply(null, arguments);
+                } catch(e) {
+                    doneCallback(e);
+                }
+                doneCallback();
+            };
+            if (expectedCallBackCountParam === 0) {
+                setTimeout(function () {
+                    observationDoneCallBack(observerCallbackCallCount);
+                }, 10);
+            }
+            expectedCallBackCount = expectedCallBackCountParam;
+            observerCallback = observationDoneCallBack;
+        }
 
         beforeEach(function () {
+            objectObserverChanges = [];
+            arrayObserverChanges = [];
+            observerCallbackCallCount = 0;
             list = List(1, 2, 3, 4);
-            var notifier = Object.getNotifier(list);
-            notifySpy = notifier.notify = sinon.spy();
+            Object.observe(list, objectObserver);
+            List.observe(list, arrayObserver);
+
         });
 
+        afterEach(function () {
+            Object.unobserve(list, objectObserver);
+            List.unobserve(list, arrayObserver);
+        });
 
-        function getNotifiedChangesRecords() {
-            return notifySpy.args.map(function (arr) {
-                return arr[0];
-            });
-        }
+        this.timeout(100);
 
-        function getNotifiedChangesRecordsWithoutSplice() {
-            return getNotifiedChangesRecords().filter(function (record) {
-                return record.type !== 'splice';
-            });
-        }
 
-        function getNotifiedSpliceChangesRecords() {
-            return getNotifiedChangesRecords().filter(function (record) {
-                return record.type === 'splice';
-            });
-        }
 
         describe('length modification', function () {
 
-            it('should notify only length modification when length is increased', function () {
-                list.length = 5;
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
+            it('should notify length modification when length is increased, and a \'splice\' record', function (done) {
+                list.length = 7;
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 4, addedCount: 3, removed: [], object: list}
+                    ]]);
+                }, done);
             });
 
 
-            it('should notify deleted property when length is decreased', function () {
+            it('should notify deleted properties when length is decreased, and a \'splice\' change describing removed items', function (done) {
                 list.length = 2;
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'deleted', name: '2', oldValue: 3},
-                    {type: 'deleted', name: '3', oldValue: 4},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'delete', name: '2', oldValue: 3, object: list},
+                        {type: 'delete', name: '3', oldValue: 4, object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 2, addedCount: 0, removed: [3, 4], object: list}
+                    ]]);
+                }, done);
             });
-
-            it('should notify a splice change recordwhen length is decread, describing removed items', function () {
-                list.length = 2;
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 2, addedCount: 0, removed: [3, 4]}
-                ]);
-            });
-
-            it('should notify a splice change recordwhen length is increased, describing the added items', function () {
-                list.length = 5;
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 4, addedCount: 1, removed: []}
-                ]);
-            });
-
         });
 
         describe('set method', function () {
-            it('should notify an change record of type "updated" when the given index is already defined on the list', function () {
+            it('should  notify an change record of type \'update\' when the given index is already defined on the list ', function (done) {
                 list.set(3, 5);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '3', oldValue: 4}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '3', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'update', name: '3', oldValue: 4, object: list}
+                    ]]);
+                }, done);
             });
 
 
-            it('should notify a change record of type "new" when the given index is not in the list bound, and a length update record', function () {
-                list.set(4, 5);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'new', name: '4'},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
-            });
-
-
-            it('should notify a splice change recordwhen the given index is not in the list bound', function () {
-                list.set(4, 5);
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 4, addedCount: 1, removed: []}
-                ]);
+            it('should notify a change record of type \'add\' when the given index is not in the list bound, and a length \'update\' record', function (done) {
+                list.set(9, 5);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'add', name: '9', object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 4, addedCount: 6, removed: [], object: list}
+                    ]]);
+                }, done);
             });
         });
 
         describe('delete method', function () {
 
-            it('should not notify anything if the index given is out of bounds', function () {
-                list.delete(5);
-                expect(notifySpy.called).to.be(false);
+            it('should not notify anything if the index given is out of bounds', function (done) {
+                getObservationResult(0, function (count) {
+                    expect(count).to.be(0);
+                }, done);
             });
 
 
-            it('should notify a delete record if the index is in bounds', function () {
+            it('should notify a delete record if the index is in bounds', function (done) {
                 list.delete(1);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'deleted', name: '1', oldValue: 2 }
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'delete', name: '1', oldValue: 2 , object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'delete', name: '1', oldValue: 2 , object: list}
+                    ]]);
+                }, done);
             });
+
+
         });
 
         describe('pop method', function () {
-            it('should notify a delete change record for the last index of the list, and a length update record', function () {
+            it('should notify a delete change record for the last index of the list, a length update record, and a splice change record', function (done) {
                 list.pop();
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'deleted', name: '3', oldValue: 4},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
-            });
-
-            it('should notify a splice change record', function () {
-                list.pop();
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 3, addedCount: 0, removed: [4]}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'delete', name: '3', oldValue: 4, object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 3, addedCount: 0, removed: [4], object: list}
+                    ]]);
+                }, done);
             });
         });
 
 
         describe('push method', function () {
 
-            it('should not notify anything if no parameters are given', function () {
-                list.push();
-                expect(notifySpy.called).to.be(false);
+            it('should not notify anything if no parameters are given', function (done) {
+                getObservationResult(0, function (count) {
+                    expect(count).to.be(0);
+                }, done);
             });
 
-            it('should notify a new change record for all added item, and a length update record', function () {
+            it('should notify a \'add\' change record for all added item, a length \'update\' record and a \'splice\' change record', function (done) {
                 list.push(5, 6);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'new', name: '4'},
-                    {type: 'new', name: '5'},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
-            });
-
-            it('should notify a splice change record', function () {
-                list.push(5, 6);
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 4, addedCount: 2, removed: []}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'add', name: '4', object: list},
+                        {type: 'add', name: '5', object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 4, addedCount: 2, removed: [], object: list}
+                    ]]);
+                }, done);
             });
         });
 
         describe('reverse method', function () {
 
-            it('should notify an update record for all modified index', function () {
+            it('should notify an \'update\' record for all modified index', function (done) {
                 list.reverse();
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '0', oldValue: 1},
-                    {type: 'updated', name: '1', oldValue: 2},
-                    {type: 'updated', name: '2', oldValue: 3},
-                    {type: 'updated', name: '3', oldValue: 4}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '0', oldValue: 1, object: list},
+                        {type: 'update', name: '1', oldValue: 2, object: list},
+                        {type: 'update', name: '2', oldValue: 3, object: list},
+                        {type: 'update', name: '3', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql(objectObserverChanges);
+                }, done);
             });
 
-            it('should not notify anything for index that have not been modified', function () {
+            it('should not notify anything for index that have not been modified', function (done) {
                 list.push(5);
-                notifySpy.reset();
                 list.reverse();
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '0', oldValue: 1},
-                    {type: 'updated', name: '1', oldValue: 2},
-                    {type: 'updated', name: '3', oldValue: 4},
-                    {type: 'updated', name: '4', oldValue: 5}
-                ]);
-            });
-
-            it('should notify a splice change record describing a complete reset of the list', function () {
-                var copy = list.toArray();
-                list.reverse();
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 0, addedCount: list.length, removed: copy}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'add', name: '4', object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list},
+                        {type: 'update', name: '0', oldValue: 1, object: list},
+                        {type: 'update', name: '1', oldValue: 2, object: list},
+                        {type: 'update', name: '3', oldValue: 4, object: list},
+                        {type: 'update', name: '4', oldValue: 5, object: list}
+                    ]]);
+                }, done);
             });
         });
 
 
         describe('shift method', function () {
-
-            it('should notify  an update record for all index except the last one, a delete change record for the last index, and a length update record', function () {
+            it('should notify an \'update\' record for all index except the last one, a \'delete\' change record for the last index, a \'length\' update record and a \'splice\' change record', function (done) {
                 list.shift();
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '0', oldValue: 1},
-                    {type: 'updated', name: '1', oldValue: 2},
-                    {type: 'updated', name: '2', oldValue: 3},
-                    {type: 'deleted', name: '3', oldValue: 4},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
-            });
-
-            it('should notify a splice change record describing the removal of the first element', function () {
-                list.shift();
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 0, addedCount: 0, removed: [1]}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '0', oldValue: 1, object: list},
+                        {type: 'update', name: '1', oldValue: 2, object: list},
+                        {type: 'update', name: '2', oldValue: 3, object: list},
+                        {type: 'delete', name: '3', oldValue: 4, object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 0, addedCount: 0, removed: [1], object: list}
+                    ]]);
+                }, done);
             });
         });
 
 
         describe('sort method', function () {
 
-            it('should notify an update record for all modified index', function () {
+            it('should notify an update record for all modified index', function (done) {
                 list.sort(function (a, b) {
                     return b - a;
                 });
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '0', oldValue: 1},
-                    {type: 'updated', name: '1', oldValue: 2},
-                    {type: 'updated', name: '2', oldValue: 3},
-                    {type: 'updated', name: '3', oldValue: 4}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '0', oldValue: 1, object: list},
+                        {type: 'update', name: '1', oldValue: 2, object: list},
+                        {type: 'update', name: '2', oldValue: 3, object: list},
+                        {type: 'update', name: '3', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql(objectObserverChanges);
+                }, done);
             });
 
-            it('should not notify anything for index that have not been modified', function () {
-                list.sort();
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([]);
-            });
-
-
-            it('should notify a splice change record describing a complete reset of the list', function () {
-                var copy = list.toArray();
-                list.sort(function (a, b) {
-                    return b - a;
-                });
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 0, addedCount: list.length, removed: copy}
-                ]);
+            it('should not notify anything for index that have not been modified', function (done) {
+                getObservationResult(0, function (count) {
+                    expect(count).to.be(0);
+                }, done);
             });
         });
 
 
         describe('splice method', function () {
-            it('should not notify anything if no parameters are given', function () {
+            it('should not notify anything if no parameters are given', function (done) {
                 list.splice();
-                expect(notifySpy.called).to.be(false);
+                getObservationResult(0, function (count) {
+                    expect(count).to.be(0);
+                }, done);
             });
 
-            it('should notify "update" records, "delete" records and length "update" records if the operation decrease the list size', function () {
+            it('should notify \'update\' records, \'delete\' records  length \'update\' records and \'splice\' records if the operation decrease the list size', function (done) {
                 list.splice(1, 2);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '1', oldValue: 2},
-                    {type: 'deleted', name: '2', oldValue: 3},
-                    {type: 'deleted', name: '3', oldValue: 4},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '1', oldValue: 2, object: list},
+                        {type: 'delete', name: '2', oldValue: 3, object: list},
+                        {type: 'delete', name: '3', oldValue: 4, object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 1, addedCount: 0, removed: [2,3], object: list}
+                    ]]);
+                }, done);
             });
 
 
-            it('should notify "update" records, "add" records and length "update" records if the operation decrease the list size', function () {
+            it('should notify \'update\' records, \'add\' records length \'update\' records and \'splice\' if the operation increase the list size', function (done) {
                 list.splice(2, 0, 4, 5);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '2', oldValue: 3},
-                    {type: 'updated', name: '3', oldValue: 4},
-                    {type: 'new', name: '4'},
-                    {type: 'new', name: '5'},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
+
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '2', oldValue: 3, object: list},
+                        {type: 'update', name: '3', oldValue: 4, object: list},
+                        {type: 'add', name: '4', object: list},
+                        {type: 'add', name: '5', object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 2, addedCount: 2, removed: [], object: list}
+                    ]]);
+                }, done);
             });
 
 
-            it('should notify "update" records only if the operation does not change the list size', function () {
+            it('should notify length \'update\' records only if the operation does not change the list size', function (done) {
                 list.splice(2, 1, 4);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '2', oldValue: 3}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '2', oldValue: 3, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 2, addedCount: 1, removed: [3], object: list}
+                    ]]);
+                }, done);
             });
 
 
-            it('should not notify anything if the operation does not modify the list', function () {
+            it('should not notify any other records than \'splice\' if the operation does not modify the list', function (done) {
                 list.splice(2, 1, 3);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([]);
+                getObservationResult(1, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 2, addedCount: 1, removed: [3], object: list}
+                    ]]);
+                }, done);
             });
-
-
-            it('should notify a splice change record corresponding to the arguments given', function () {
-                list.splice(2, 1, 4, 5);
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 2, addedCount: 2, removed: [3]}
-                ]);
-            });
-
-
         });
 
 
         describe('unshift method', function () {
-            it('should not notify anything if no parameters are given', function () {
+            it('should not notify anything if no parameters are given', function (done) {
                 list.unshift();
-                expect(notifySpy.called).to.be(false);
+                getObservationResult(0, function (count) {
+                    expect(count).to.be(0);
+                }, done);
             });
 
-            it('should notify and update record for all index, a new change record for all added index, and a length update record', function () {
+            it('should notify and \'update\' record for all index, a \'new\' change record for all added index, a length \'update\' record and a \'splice\' record', function (done) {
                 list.unshift(5, 6);
-                expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-                    {type: 'updated', name: '0', oldValue: 1},
-                    {type: 'updated', name: '1', oldValue: 2},
-                    {type: 'updated', name: '2', oldValue: 3},
-                    {type: 'updated', name: '3', oldValue: 4},
-                    {type: 'new', name: '4'},
-                    {type: 'new', name: '5'},
-                    {type: 'updated', name: 'length', oldValue: 4}
-                ]);
-            });
-
-
-            it('should notify a splice change record corresponding to the element added', function () {
-                list.unshift(4, 5);
-                expect(getNotifiedSpliceChangesRecords()).to.be.eql([
-                    {type: 'splice', index: 0, addedCount: 2, removed: []}
-                ]);
+                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                    expect(objectObserverChanges).to.be.eql([[
+                        {type: 'update', name: '0', oldValue: 1, object: list},
+                        {type: 'update', name: '1', oldValue: 2, object: list},
+                        {type: 'update', name: '2', oldValue: 3, object: list},
+                        {type: 'update', name: '3', oldValue: 4, object: list},
+                        {type: 'add', name: '4', object: list},
+                        {type: 'add', name: '5', object: list},
+                        {type: 'update', name: 'length', oldValue: 4, object: list}
+                    ]]);
+                    expect(arrayObserverChanges).to.be.eql([[
+                        {type: 'splice', index: 0, addedCount: 2, removed: [], object: list}
+                    ]]);
+                }, done);
             });
         });
     });

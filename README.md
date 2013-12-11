@@ -31,13 +31,13 @@ Define observable properties on the given object an return it.
             name : "foo",
             object : myObject,
             oldValue : undefined,
-            type : "updated"
+            type : "update"
         },
         {
             name : "bar",
             object : myObject,
             oldValue : undefined,
-            type : "updated"
+            type : "update"
         }
     ]
 
@@ -88,18 +88,16 @@ To set a value at a given index use the <code>set</code> method of the List :
 
     [
         {
-            type : "splice",
+            type : "update",
             object: myList,
-            index: 3,
-            removed: [],
-            addedCount: 1
+            name: '3',
+            oldValue: 3
         },
         {
-            type : "splice",
+            type : "update",
             object: myList,
-            index: 3,
-            removed: [4],
-            addedCount: 1
+            name: '3',
+            oldValue: 4
         }
     ]
 
@@ -119,7 +117,7 @@ to delete a value at a given index use the <code>delete</code>  method of the Li
             name : 2,
             object : myList,
             oldValue : 3,
-            type : "deleted"
+            type : "delete"
         }
     ]
     

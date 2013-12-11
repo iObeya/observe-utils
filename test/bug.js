@@ -44,9 +44,9 @@ describe('observer-utils bugs', function () {
     it('Method like unshift create change records for index that does not have change', function () {
         list.unshift(1);
         expect(getNotifiedChangesRecordsWithoutSplice()).to.be.eql([
-            {type: 'updated', name: '1', oldValue: 2},
-            {type: 'new', name: '2'},
-            {type: 'updated', name: 'length', oldValue: 2}
+            {type: 'update', name: '1', oldValue: 2},
+            {type: 'add', name: '2'},
+            {type: 'update', name: 'length', oldValue: 2}
         ]);
     });
 
