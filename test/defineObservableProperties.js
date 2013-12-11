@@ -154,7 +154,7 @@ describe('defineObservableProperties', function () {
 
         expect(notifier.notify.calledOnce).to.be.ok();
         expect(notifier.notify.args[0][0]).to.be.eql({
-            type: 'updated',
+            type: 'update',
             name: 'property',
             oldValue: undefined
         });
@@ -172,7 +172,7 @@ describe('defineObservableProperties', function () {
 
         expect(notifier.notify.calledOnce).to.be.ok();
         expect(notifier.notify.args[0][0]).to.be.eql({
-            type: 'updated',
+            type: 'update',
             name: 'property',
             oldValue: undefined
         });
