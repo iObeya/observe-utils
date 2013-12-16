@@ -931,7 +931,7 @@ describe('List', function () {
             var observationDoneCallBack = function ()  {
                 try {
                     callback.apply(null, arguments);
-                } catch(e) {
+                } catch (e) {
                     doneCallback(e);
                 }
                 doneCallback();
@@ -1035,10 +1035,10 @@ describe('List', function () {
                 list.delete(1);
                 getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
                     expect(objectObserverChanges).to.be.eql([[
-                        {type: 'delete', name: '1', oldValue: 2 , object: list}
+                        {type: 'delete', name: '1', oldValue: 2, object: list}
                     ]]);
                     expect(arrayObserverChanges).to.be.eql([[
-                        {type: 'delete', name: '1', oldValue: 2 , object: list}
+                        {type: 'delete', name: '1', oldValue: 2, object: list}
                     ]]);
                 }, done);
             });
@@ -1103,7 +1103,7 @@ describe('List', function () {
             it('should not notify anything for index that have not been modified', function (done) {
                 list.push(5);
                 list.reverse();
-                getObservationResult(2, function (objectObserverChanges, arrayObserverChanges) {
+                getObservationResult(2, function (objectObserverChanges) {
                     expect(objectObserverChanges).to.be.eql([[
                         {type: 'add', name: '4', object: list},
                         {type: 'update', name: 'length', oldValue: 4, object: list},
@@ -1179,7 +1179,7 @@ describe('List', function () {
                         {type: 'update', name: 'length', oldValue: 4, object: list}
                     ]]);
                     expect(arrayObserverChanges).to.be.eql([[
-                        {type: 'splice', index: 1, addedCount: 0, removed: [2,3], object: list}
+                        {type: 'splice', index: 1, addedCount: 0, removed: [2, 3], object: list}
                     ]]);
                 }, done);
             });
