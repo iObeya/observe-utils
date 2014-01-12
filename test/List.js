@@ -153,9 +153,6 @@ describe('List', function () {
                 expect(list.toString()).to.be(['1', '2', '3', '4'].toString());
             });
 
-            it('toJSON result should be the same than a the corresponding array JSON', function () {
-                expect(list.toJSON()).to.be(JSON.stringify(['1', '2', '3', '4']));
-            });
         });
 
 
