@@ -1,7 +1,7 @@
 {
   "name": "observe-utils",
   "description": "A set of utilities for the observe-shim",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "keywords": [
     "observe",
     "observe-utils",
